@@ -47,7 +47,7 @@ RUN cd libnabo && \
     git checkout 3cab7eed92bd5d4aed997347b8c8a2692a83a532 && \
     mkdir build && \
     cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_OPEN_CL:BOOL=TRUE .. -L && \
     make -j$(nproc) && \
     make install && \
     cd && \
@@ -58,7 +58,7 @@ RUN cd libpointmatcher && \
     git checkout 76f99fce0fe69e6384102a0343fdf8d262626e1f && \
     mkdir build && \
     cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_OPEN_CL:BOOL=TRUE -L .. && \
     make -j$(nproc) && \
     make install && \
     cd && \
@@ -192,6 +192,32 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/
     cd && \
     rm -r cpu_tsdf; fi
 
+
+    # cd CCCoreLib/extern && \
+    # git clone https://github.com/jlblancoc/nanoflann.git && \
+    # cd nanoflann && \
+    # git checkout v1.4.3 && \
+    # mkdir build && \
+    # cd build && \
+    # cmake -DCMAKE_BUILD_TYPE=Release -DNANOFLANN_BUILD_BENCHMARKS=OFF -DNANOFLANN_BUILD_EXAMPLES=OFF -DNANOFLANN_BUILD_TESTS=OFF .. && \
+    # make -j$(nproc) && \
+    # make install && \
+    # cd ../../.. && \
+RUN apt-get install -y libcgal-dev libtbb-dev ninja-build
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recursive https://github.com/CloudCompare/CCCoreLib.git && \
+    cd CCCoreLib && \
+    git checkout 5990baecf64672065fe8d8d38938e2140eb4f1ac && \
+    mkdir build && \
+    cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release -L .. && \
+    cmake --build . && \
+    cmake --install . && \
+    cd && \
+    cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibConfig.cmake && \
+    echo "cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake" && \
+    cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake && \
+    rm -r CCCoreLib; fi
+
 # Open Chisel
 # RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/personalrobotics/OpenChisel.git && \
 #     cd OpenChisel/open_chisel && \
@@ -237,9 +263,9 @@ ARG CACHE_DATE=2016-01-01
 
 # Build RTAB-Map project
 RUN source /ros_entrypoint.sh && \
-    git clone https://github.com/introlab/rtabmap.git && \
+    git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    cmake -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_ALICE_VISION=ON -DWITH_CPUTSDF=ON -DOPEN3D=ON .. && \
+    cmake -DCMAKE_PREFIX_PATH=/usr/local/share/nanoflann/cmake/ -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=ON -DWITH_ALICE_VISION=ON -DWITH_CPUTSDF=ON -DOPEN3D=ON -L .. && \
     make -j$(nproc) && \
     make install && \
     cd ../.. && \

@@ -596,6 +596,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudFromDepthRGB(
 			}
 		}
 	}
+        UDEBUG("validIndices check");
 	if(validIndices)
 	{
 		validIndices->resize(oi);
