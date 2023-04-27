@@ -31,38 +31,39 @@ RUN mkdir neo && cd neo && \
     rm -rf /var/lib/apt/lists/
 
 # OpenCV
-RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git
-RUN git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git
-RUN mkdir opencv_build && cd opencv_build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local ../opencv && \
-    make -j$(nproc) && \
+RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev libopencv-contrib4.2 libopencv-core4.2
+RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git && \
+    git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git && \
+    mkdir opencv_build && cd opencv_build && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
+    make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
     rm -r opencv_build opencv opencv_contrib
 
 # libpointmatcher 
-RUN git clone https://github.com/ethz-asl/libnabo.git
-#commit February 13 2021
-RUN cd libnabo && \
-    git checkout 3cab7eed92bd5d4aed997347b8c8a2692a83a532 && \
-    mkdir build && \
-    cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_OPEN_CL:BOOL=TRUE .. -L && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r libnabo
-RUN git clone https://github.com/ethz-asl/libpointmatcher.git
-#commit April 6 2021
-RUN cd libpointmatcher && \
-    git checkout 76f99fce0fe69e6384102a0343fdf8d262626e1f && \
-    mkdir build && \
-    cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_OPEN_CL:BOOL=TRUE -L .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r libpointmatcher
+# RUN git clone https://github.com/ethz-asl/libnabo.git
+# #commit February 13 2021
+# RUN cd libnabo && \
+#     git checkout 3cab7eed92bd5d4aed997347b8c8a2692a83a532 && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Debug -DUSE_OPEN_CL:BOOL=FALSE -DLIBNABO_BUILD_EXAMPLES=OFF -DLIBNABO_BUILD_TESTS=OFF -DLIBNABO_BUILD_PYTHON=OFF .. -L && \
+#     make VERBOSE=1 -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r libnabo
+# RUN git clone https://github.com/ethz-asl/libpointmatcher.git
+# #commit April 6 2021
+# RUN cd libpointmatcher && \
+#     git checkout 76f99fce0fe69e6384102a0343fdf8d262626e1f && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Debug -DUSE_OPEN_CL:BOOL=OFF -L .. && \
+#     make VERBOSE=1 -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r libpointmatcher
     
 # PDAL
 RUN apt-get update && \ 
@@ -110,87 +111,76 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing libfreenect2
     mkdir build && \
     cd build && \
     cmake .. && \
-    make -j$(nproc) && \
+    make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
     rm -r libfreenect2; fi
 
-# zed open capture
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing zed-open-capture..." && \
-    apt install libusb-1.0-0-dev libhidapi-libusb0 libhidapi-dev && \
-    git clone https://github.com/stereolabs/zed-open-capture.git && \
-    cd zed-open-capture && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r zed-open-capture; fi
+# # zed open capture
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing zed-open-capture..." && \
+#     apt install libusb-1.0-0-dev libhidapi-libusb0 libhidapi-dev && \
+#     git clone https://github.com/stereolabs/zed-open-capture.git && \
+#     cd zed-open-capture && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r zed-open-capture; fi
 
 # AliceVision v2.4.0 modified (Sept 13 2021)
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing AliceVision..." && \
-apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-      libsuitesparse-dev \
-      libceres-dev \
-      xorg-dev \
-      libglu1-mesa-dev \
-      wget; fi
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/OpenImageIO/oiio.git && \
-    cd oiio && \
-    git checkout Release-2.0.12 && \
-    mkdir build && \
-    cd build && \
-    cmake -DUSE_PYTHON=OFF -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r oiio; fi
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/assimp/assimp.git && \
-    cd assimp && \
-    git checkout 71a87b653cd4b5671104fe49e2e38cf5dd4d8675 && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r assimp; fi
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/alicevision/geogram.git && \
-    cd geogram && \
-    git checkout v1.7.6 && \
-    wget https://gist.githubusercontent.com/matlabbe/1df724465106c056ca4cc195c81d8cf0/raw/b3ed4cb8f9b270833a40d57d870a259eabfa4415/geogram_8b2ae61.patch && \
-    git apply geogram_8b2ae61.patch && \
-    ./configure.sh && \
-    cd build/Linux64-gcc-dynamic-Release && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r geogram; fi
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recurse-submodules https://github.com/alicevision/AliceVision.git --recursive && \
-    cd AliceVision && \
-    git checkout 0f6115b6af6183c524aa7fcf26141337c1cf3872 && \
-    git submodule update -i && \
-    wget https://gist.githubusercontent.com/matlabbe/1df724465106c056ca4cc195c81d8cf0/raw/b3ed4cb8f9b270833a40d57d870a259eabfa4415/alicevision_0f6115b.patch && \
-    git apply alicevision_0f6115b.patch && \
-    mkdir build && \
-    cd build && \
-    cmake -DALICEVISION_USE_CUDA=OFF -DALICEVISION_USE_APRILTAG=OFF -DALICEVISION_BUILD_SOFTWARE=OFF .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r AliceVision; fi
-
-# CPU TDSF
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/sdmiller/cpu_tsdf.git && \
-    cd cpu_tsdf && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd && \
-    rm -r cpu_tsdf; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing AliceVision..." && \
+# apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+#       libsuitesparse-dev \
+#       libceres-dev \
+#       xorg-dev \
+#       libglu1-mesa-dev \
+#       wget; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/OpenImageIO/oiio.git && \
+#     cd oiio && \
+#     git checkout Release-2.0.12 && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DUSE_PYTHON=OFF -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r oiio; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/assimp/assimp.git && \
+#     cd assimp && \
+#     git checkout 71a87b653cd4b5671104fe49e2e38cf5dd4d8675 && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r assimp; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/alicevision/geogram.git && \
+#     cd geogram && \
+#     git checkout v1.7.6 && \
+#     wget https://gist.githubusercontent.com/matlabbe/1df724465106c056ca4cc195c81d8cf0/raw/b3ed4cb8f9b270833a40d57d870a259eabfa4415/geogram_8b2ae61.patch && \
+#     git apply geogram_8b2ae61.patch && \
+#     ./configure.sh && \
+#     cd build/Linux64-gcc-dynamic-Release && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r geogram; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recurse-submodules https://github.com/alicevision/AliceVision.git --recursive && \
+#     cd AliceVision && \
+#     git checkout 0f6115b6af6183c524aa7fcf26141337c1cf3872 && \
+#     git submodule update -i && \
+#     wget https://gist.githubusercontent.com/matlabbe/1df724465106c056ca4cc195c81d8cf0/raw/b3ed4cb8f9b270833a40d57d870a259eabfa4415/alicevision_0f6115b.patch && \
+#     git apply alicevision_0f6115b.patch && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DALICEVISION_USE_CUDA=OFF -DALICEVISION_USE_APRILTAG=OFF -DALICEVISION_BUILD_SOFTWARE=OFF .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r AliceVision; fi
 
 
     # cd CCCoreLib/extern && \
@@ -199,24 +189,24 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/
     # git checkout v1.4.3 && \
     # mkdir build && \
     # cd build && \
-    # cmake -DCMAKE_BUILD_TYPE=Release -DNANOFLANN_BUILD_BENCHMARKS=OFF -DNANOFLANN_BUILD_EXAMPLES=OFF -DNANOFLANN_BUILD_TESTS=OFF .. && \
+    # cmake -DCMAKE_BUILD_TYPE=Debug -DNANOFLANN_BUILD_BENCHMARKS=OFF -DNANOFLANN_BUILD_EXAMPLES=OFF -DNANOFLANN_BUILD_TESTS=OFF .. && \
     # make -j$(nproc) && \
     # make install && \
     # cd ../../.. && \
-RUN apt-get install -y libcgal-dev libtbb-dev ninja-build
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recursive https://github.com/CloudCompare/CCCoreLib.git && \
-    cd CCCoreLib && \
-    git checkout 5990baecf64672065fe8d8d38938e2140eb4f1ac && \
-    mkdir build && \
-    cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -L .. && \
-    cmake --build . && \
-    cmake --install . && \
-    cd && \
-    cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibConfig.cmake && \
-    echo "cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake" && \
-    cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake && \
-    rm -r CCCoreLib; fi
+# RUN apt-get install -y libcgal-dev libtbb-dev ninja-build
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recursive https://github.com/CloudCompare/CCCoreLib.git && \
+#     cd CCCoreLib && \
+#     git checkout 5990baecf64672065fe8d8d38938e2140eb4f1ac && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_BUILD_TYPE=Debug -L .. && \
+#     cmake --build . && \
+#     cmake --install . && \
+#     cd && \
+#     cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibConfig.cmake && \
+#     echo "cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake" && \
+#     cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake && \
+#     rm -r CCCoreLib; fi
 
 # Open Chisel
 # RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/personalrobotics/OpenChisel.git && \
@@ -230,26 +220,26 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recursive https:/
 #     rm -r OpenChisel; fi
 
 # cmake 3.2 for Open3D
-# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then wget https://cmake.org/files/v3.20/cmake-3.20.6.tar.gz && \
-#     tar zxvf cmake-3.20.6.tar.gz && \
-#     cd cmake-3.20.6 && \
-#     ./configure && \
-#     make -j$(nproc) && \
-#     make install && \
-#     cd && \
-#     rm -r cmake-3.20.6; fi
-# 
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then wget https://cmake.org/files/v3.20/cmake-3.20.6.tar.gz && \
+    tar zxvf cmake-3.20.6.tar.gz && \
+    cd cmake-3.20.6 && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r cmake-3.20.6; fi
+
+ARG CACHE_DATE=2016-01-01
+
 # RUN apt-get update && \
 #     apt-get install -y llvm-dev libc++abi-dev libc++-dev
-# 
-# RUN df
-#     
-# # Open3D
+
+# Open3D
 # RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone -b v0.16.0 https://github.com/isl-org/Open3D.git && \
 #      cd Open3D && \
 #      mkdir build && \
 #      cd build && \
-#      /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release .. && \
+#      /usr/local/bin/cmake -DBUILD_SHARED_LIBS=ON -DGLIBCXX_USE_CXX11_ABI=ON -DCMAKE_BUILD_TYPE=Release .. && \
 #      make -j$(nproc) && \
 #      make install && \
 #      cd && \
@@ -258,20 +248,72 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recursive https:/
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-# Clone source code
-ARG CACHE_DATE=2016-01-01
+# PCL : Point cloud library
+RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
+RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
+RUN git clone -b 1.9.2 https://github.com/flann-lib/flann.git && \
+    cd flann && mkdir build && cd build && \
+    cat ../CMakeLists.txt && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17" -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=OFF -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r flann
 
+RUN git clone -b pcl-1.13.0 https://github.com/PointCloudLibrary/pcl && \
+    cd pcl && \
+    sed -i '11s/14/17/' CMakeLists.txt && \
+    sed -i '14s/14/17/' CMakeLists.txt && \
+    cat CMakeLists.txt && \
+    mkdir build && cd build && \
+    cmake -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=Debug -DBUILD_WITH_MARCH_NATIVE=OFF -DPCL_ENABLE_MARCHNATIVE:BOOL=OFF -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd ../.. && \
+    rm -r pcl
+
+
+# CPU TDSF
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/arrlee/cpu_tsdf.git && \
+#     cd cpu_tsdf && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r cpu_tsdf; fi
+
+RUN gcc -v
+
+RUN dpkg -l
+
+# g2o
+# RUN rm -r /opt/ros/noetic/lib/libg2o_* /opt/ros/noetic/share/libg2o /opt/ros/noetic/lib/cmake/g2o/ && ldconfig
+RUN apt-get remove ros-noetic-libg2o libsuitesparse-dev libsuitesparseconfig5:amd64 -y
+RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o.git && \
+    cd g2o && \
+    sed -i '354s/11/17/' CMakeLists.txt && \
+    sed -i '356 i set(CMAKE_CXX_EXTENSIONS OFF)' CMakeLists.txt && \
+    cat CMakeLists.txt && \
+    mkdir build && cd build && \
+    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx2" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd .. && \
+    rm -r g2o
+
+# Clone source code
 # Build RTAB-Map project
 RUN source /ros_entrypoint.sh && \
     git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    cmake -DCMAKE_PREFIX_PATH=/usr/local/share/nanoflann/cmake/ -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=ON -DWITH_ALICE_VISION=ON -DWITH_CPUTSDF=ON -DOPEN3D=ON -L .. && \
-    make -j$(nproc) && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Debug -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -L .. && \
+    make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd ../.. && \
     rm -rf rtabmap && \
     ldconfig
 
-# RUN apt install libxcb-xinerama0
-# RUN sudo apt-get -y install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+RUN apt-get install valgrind -y
 
