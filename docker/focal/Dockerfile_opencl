@@ -258,7 +258,6 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then wget https://cmake.org/files/
     cd && \
     rm -r cmake-3.20.6; fi
 
-ARG CACHE_DATE=2016-01-01
 
 # RUN apt-get update && \
 #     apt-get install -y llvm-dev libc++abi-dev libc++-dev
@@ -277,12 +276,31 @@ ARG CACHE_DATE=2016-01-01
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
+RUN apt-get install qtbase5-dev qt5-default qtbase5-dev-tools libqt5x11extras5-dev -y
+ARG CACHE_DATE=2016-01-01
+RUN date && dpkg -l
+
+# VTK
+RUN apt-get remove libvtk7-dev libvtk7-qt-dev libvtk7.1p-qt -y
+RUN git clone -b v7.1.1 https://gitlab.kitware.com/vtk/vtk.git && \
+    cd vtk && \
+    mkdir build && cd build && \
+    /usr/local/bin/cmake -DModule_vtkIOMPIImage=ON -DModule_vtkIOMPIParallel:BOOL=ON -DModule_vtkFiltersParallelDIY2:BOOL=ON -DModule_vtkGUISupportQt:BOOL=ON -DBUILD_TESTING:BOOL=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx2" -DEigen3_DIR=/usr/local/include/eigen3/ \
+     -DVTK_QT_VERSION:STRING=5 \
+     -DQT_QMAKE_EXECUTABLE:PATH=/usr/lib/qt5/bin/qmake \
+     -DVTK_Group_Qt:BOOL=ON \
+     -DBUILD_SHARED_LIBS:BOOL=ON \
+     -LA .. && \
+    make -j$(nproc) && \
+    make install && \
+    cd ../.. && \
+    rm -rf vtk
+
 # PCL : Point cloud library
 RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
 RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
-    cat ../CMakeLists.txt && \
     cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17" -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=OFF -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
@@ -293,7 +311,6 @@ RUN git clone -b pcl-1.13.0 https://github.com/PointCloudLibrary/pcl && \
     cd pcl && \
     sed -i '11s/14/17/' CMakeLists.txt && \
     sed -i '14s/14/17/' CMakeLists.txt && \
-    cat CMakeLists.txt && \
     mkdir build && cd build && \
     cmake -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
@@ -315,7 +332,6 @@ RUN git clone -b pcl-1.13.0 https://github.com/PointCloudLibrary/pcl && \
 
 RUN gcc -v
 
-RUN dpkg -l
 
 # g2o
 # RUN rm -r /opt/ros/noetic/lib/libg2o_* /opt/ros/noetic/share/libg2o /opt/ros/noetic/lib/cmake/g2o/ && ldconfig
@@ -334,7 +350,6 @@ RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o.git && \
 
 # Clone source code
 # Build RTAB-Map project
-RUN apt-get install libvtk7-dev libvtk7-qt-dev libvtk7.1p-qt -y
 RUN source /ros_entrypoint.sh && \
     git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
