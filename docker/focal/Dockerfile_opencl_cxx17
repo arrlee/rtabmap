@@ -1,0 +1,368 @@
+# Image: introlab3it/rtabmap:focal
+
+FROM ros:noetic-perception
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y git software-properties-common ros-noetic-rtabmap-ros && \
+    apt-get remove -y ros-noetic-rtabmap && \
+    rm -rf /var/lib/apt/lists/
+
+RUN apt-get update && apt-get install -y curl wget
+
+WORKDIR /root/
+
+# Eigen
+RUN apt-get remove libeigen3-dev -y
+RUN git clone -b 3.3.7 https://gitlab.com/libeigen/eigen.git && \
+    cd eigen && \
+    mkdir build && cd build && \
+    cmake -DBUILD_WITH_MARCH_NATIVE=ON -DBoost_INCLUDE_DIR=$BOOSTDIR/include -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r eigen
+
+
+# GTSAM
+# RUN add-apt-repository ppa:borglab/gtsam-release-4.0 -y
+# RUN apt install libgtsam-dev libgtsam-unstable-dev -y
+#    mv ceres/ ceres_ && \
+# -DCMAKE_CXX_FLAGS="-std=c++17"
+#    make VERBOSE=1 -j$(nproc) && \
+#    git checkout ab92779b25b04b376fbbd1846bbbd21904c50e7a && \
+#    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DGTSAM_WITH_TBB=ON -DCMAKE_BUILD_TYPE=Release -DGTSAM_USE_SYSTEM_METIS:BOOL=ON -LA .. && \
+#    cd gtsam/3rdparty/ && \
+#    mv Eigen/ Eigen_ && \
+#    cd ../.. && \
+RUN git clone -b 4.1.1 https://github.com/borglab/gtsam.git && \
+    cd gtsam && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -mavx2 -std=c++17 -g" -DGTSAM_WITH_TBB=OFF -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r gtsam
+
+
+# OpenCL
+RUN mkdir neo && cd neo && \
+    wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.13230.7/intel-igc-core_1.0.13230.7_amd64.deb && \
+    wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.13230.7/intel-igc-opencl_1.0.13230.7_amd64.deb && \
+    wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-level-zero-gpu-dbgsym_1.3.25593.11_amd64.ddeb && \
+    wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-level-zero-gpu_1.3.25593.11_amd64.deb && \
+    wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-opencl-icd-dbgsym_23.05.25593.11_amd64.ddeb && \
+    wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-opencl-icd_23.05.25593.11_amd64.deb && \
+    wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/libigdgmm12_22.3.0_amd64.deb && \
+    apt install ./*.deb && \
+    apt install -y clinfo intel-gpu-tools && \
+    rm -rf neo && \
+    rm -rf /var/lib/apt/lists/
+
+# OpenCV
+RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev libopencv-contrib4.2 libopencv-core4.2
+RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git && \
+    git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git && \
+    mkdir opencv_build && cd opencv_build && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17 -g" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r opencv_build opencv opencv_contrib
+
+# libpointmatcher 
+# RUN git clone https://github.com/ethz-asl/libnabo.git
+# #commit February 13 2021
+# RUN cd libnabo && \
+#     git checkout 3cab7eed92bd5d4aed997347b8c8a2692a83a532 && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Debug -DUSE_OPEN_CL:BOOL=FALSE -DLIBNABO_BUILD_EXAMPLES=OFF -DLIBNABO_BUILD_TESTS=OFF -DLIBNABO_BUILD_PYTHON=OFF .. -L && \
+#     make VERBOSE=1 -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r libnabo
+# RUN git clone https://github.com/ethz-asl/libpointmatcher.git
+# #commit April 6 2021
+# RUN cd libpointmatcher && \
+#     git checkout 76f99fce0fe69e6384102a0343fdf8d262626e1f && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Debug -DUSE_OPEN_CL:BOOL=OFF -L .. && \
+#     make VERBOSE=1 -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r libpointmatcher
+    
+# PDAL
+RUN apt-get update && \ 
+    apt-get install -y libpdal-dev
+
+# RealSense2
+RUN apt-get install -y ros-noetic-librealsense2
+
+ARG TARGETPLATFORM
+ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+RUN echo "I am building for $TARGETPLATFORM"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Azure Kinect DK
+# Taken from https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/1190#issuecomment-822772494
+# K4A binaries on 20.04 not released yet, we should take those from 18.04
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing k4a..." && \
+    echo "Download libk4a1.3_1.3.0_amd64.deb..." && \
+    curl -sSL https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4a1.3/libk4a1.3_1.3.0_amd64.deb > /tmp/libk4a1.3_1.3.0_amd64.deb && \
+    echo "Download libk4a1.3-dev_1.3.0_amd64.deb..." && \
+    curl -sSL https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4a1.3-dev/libk4a1.3-dev_1.3.0_amd64.deb > /tmp/libk4a1.3-dev_1.3.0_amd64.deb && \
+    echo "Download libk4abt1.0_1.0.0_amd64.deb..." && \
+    curl -sSL https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4abt1.0/libk4abt1.0_1.0.0_amd64.deb > /tmp/libk4abt1.0_1.0.0_amd64.deb && \
+    echo "Download libk4abt1.0-dev_1.0.0_amd64.deb..." && \
+    curl -sSL https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4abt1.0-dev/libk4abt1.0-dev_1.0.0_amd64.deb > /tmp/libk4abt1.0-dev_1.0.0_amd64.deb && \
+    echo "Download k4a-tools_1.3.0_amd64.deb..." && \
+    curl -sSL https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/k/k4a-tools/k4a-tools_1.3.0_amd64.deb > /tmp/k4a-tools_1.3.0_amd64.deb && \
+    echo "Accept license..." && \
+    echo 'libk4a1.3 libk4a1.3/accepted-eula-hash string 0f5d5c5de396e4fee4c0753a21fee0c1ed726cf0316204edda484f08cb266d76' | debconf-set-selections && \
+    echo 'libk4abt1.0	libk4abt1.0/accepted-eula-hash	string	03a13b63730639eeb6626d24fd45cf25131ee8e8e0df3f1b63f552269b176e38' | debconf-set-selections && \
+    dpkg -i /tmp/libk4a1.3_1.3.0_amd64.deb && \
+    dpkg -i /tmp/libk4a1.3-dev_1.3.0_amd64.deb && \
+    dpkg -i /tmp/libk4abt1.0_1.0.0_amd64.deb && \
+    dpkg -i /tmp/libk4abt1.0-dev_1.0.0_amd64.deb && \
+    apt-get install -y libsoundio1 && \
+    dpkg -i /tmp/k4a-tools_1.3.0_amd64.deb && \
+    rm /tmp/libk4a* /tmp/k4a*; fi
+
+# libfreenect2 
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing libfreenect2..." && \
+    apt-get install -y mesa-utils xserver-xorg-video-all libusb-1.0-0-dev libturbojpeg0-dev libglfw3-dev && \
+    git clone https://github.com/OpenKinect/libfreenect2 && \
+    cd libfreenect2 && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r libfreenect2; fi
+
+# # zed open capture
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing zed-open-capture..." && \
+#     apt install libusb-1.0-0-dev libhidapi-libusb0 libhidapi-dev && \
+#     git clone https://github.com/stereolabs/zed-open-capture.git && \
+#     cd zed-open-capture && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r zed-open-capture; fi
+
+# AliceVision v2.4.0 modified (Sept 13 2021)
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing AliceVision..." && \
+# apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+#       libsuitesparse-dev \
+#       libceres-dev \
+#       xorg-dev \
+#       libglu1-mesa-dev \
+#       wget; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/OpenImageIO/oiio.git && \
+#     cd oiio && \
+#     git checkout Release-2.0.12 && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DUSE_PYTHON=OFF -DOIIO_BUILD_TESTS=OFF -DOIIO_BUILD_TOOLS=OFF .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r oiio; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/assimp/assimp.git && \
+#     cd assimp && \
+#     git checkout 71a87b653cd4b5671104fe49e2e38cf5dd4d8675 && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r assimp; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/alicevision/geogram.git && \
+#     cd geogram && \
+#     git checkout v1.7.6 && \
+#     wget https://gist.githubusercontent.com/matlabbe/1df724465106c056ca4cc195c81d8cf0/raw/b3ed4cb8f9b270833a40d57d870a259eabfa4415/geogram_8b2ae61.patch && \
+#     git apply geogram_8b2ae61.patch && \
+#     ./configure.sh && \
+#     cd build/Linux64-gcc-dynamic-Release && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r geogram; fi
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recurse-submodules https://github.com/alicevision/AliceVision.git --recursive && \
+#     cd AliceVision && \
+#     git checkout 0f6115b6af6183c524aa7fcf26141337c1cf3872 && \
+#     git submodule update -i && \
+#     wget https://gist.githubusercontent.com/matlabbe/1df724465106c056ca4cc195c81d8cf0/raw/b3ed4cb8f9b270833a40d57d870a259eabfa4415/alicevision_0f6115b.patch && \
+#     git apply alicevision_0f6115b.patch && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DALICEVISION_USE_CUDA=OFF -DALICEVISION_USE_APRILTAG=OFF -DALICEVISION_BUILD_SOFTWARE=OFF .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r AliceVision; fi
+
+
+    # cd CCCoreLib/extern && \
+    # git clone https://github.com/jlblancoc/nanoflann.git && \
+    # cd nanoflann && \
+    # git checkout v1.4.3 && \
+    # mkdir build && \
+    # cd build && \
+    # cmake -DCMAKE_BUILD_TYPE=Debug -DNANOFLANN_BUILD_BENCHMARKS=OFF -DNANOFLANN_BUILD_EXAMPLES=OFF -DNANOFLANN_BUILD_TESTS=OFF .. && \
+    # make -j$(nproc) && \
+    # make install && \
+    # cd ../../.. && \
+# RUN apt-get install -y libcgal-dev libtbb-dev ninja-build
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone --recursive https://github.com/CloudCompare/CCCoreLib.git && \
+#     cd CCCoreLib && \
+#     git checkout 5990baecf64672065fe8d8d38938e2140eb4f1ac && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_BUILD_TYPE=Debug -L .. && \
+#     cmake --build . && \
+#     cmake --install . && \
+#     cd && \
+#     cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibConfig.cmake && \
+#     echo "cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake" && \
+#     cat /usr/local/lib/cmake/CCCoreLib/CCCoreLibTargets.cmake && \
+#     rm -r CCCoreLib; fi
+
+# Open Chisel
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/personalrobotics/OpenChisel.git && \
+#     cd OpenChisel/open_chisel && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DCMAKE_BUILD_TYPE=Release .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r OpenChisel; fi
+
+# cmake 3.2 for Open3D
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then wget https://cmake.org/files/v3.20/cmake-3.20.6.tar.gz && \
+    tar zxvf cmake-3.20.6.tar.gz && \
+    cd cmake-3.20.6 && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r cmake-3.20.6; fi
+
+
+# RUN apt-get update && \
+#     apt-get install -y llvm-dev libc++abi-dev libc++-dev
+
+# Open3D
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone -b v0.16.0 https://github.com/isl-org/Open3D.git && \
+#      cd Open3D && \
+#      mkdir build && \
+#      cd build && \
+#      /usr/local/bin/cmake -DBUILD_SHARED_LIBS=ON -DGLIBCXX_USE_CXX11_ABI=ON -DCMAKE_BUILD_TYPE=Release .. && \
+#      make -j$(nproc) && \
+#      make install && \
+#      cd && \
+#      rm -r Open3D; fi
+#     
+
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+RUN apt-get install qtbase5-dev qt5-default qtbase5-dev-tools libqt5x11extras5-dev -y
+ARG CACHE_DATE=2016-01-01
+RUN date && dpkg -l
+
+# VTK
+RUN apt-get remove libvtk7-dev libvtk7-qt-dev libvtk7.1p-qt -y
+RUN git clone -b v7.1.1 https://gitlab.kitware.com/vtk/vtk.git && \
+    cd vtk && \
+    mkdir build && cd build && \
+    /usr/local/bin/cmake -DModule_vtkIOMPIImage=ON -DModule_vtkIOMPIParallel:BOOL=ON -DModule_vtkFiltersParallelDIY2:BOOL=ON -DModule_vtkGUISupportQt:BOOL=ON -DBUILD_TESTING:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx2 -g" -DEigen3_DIR=/usr/local/include/eigen3/ \
+     -DVTK_QT_VERSION:STRING=5 \
+     -DQT_QMAKE_EXECUTABLE:PATH=/usr/lib/qt5/bin/qmake \
+     -DVTK_Group_Qt:BOOL=ON \
+     -DBUILD_SHARED_LIBS:BOOL=ON \
+     -LA .. && \
+    make -j$(nproc) && \
+    make install && \
+    cd ../.. && \
+    rm -rf vtk
+
+# PCL : Point cloud library
+RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
+RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
+RUN git clone -b 1.9.2 https://github.com/flann-lib/flann.git && \
+    cd flann && mkdir build && cd build && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17" -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r flann
+
+RUN git clone -b pcl-1.13.0 https://github.com/PointCloudLibrary/pcl && \
+    cd pcl && \
+    sed -i '11s/14/17/' CMakeLists.txt && \
+    sed -i '14s/14/17/' CMakeLists.txt && \
+    mkdir build && cd build && \
+    cmake -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd ../.. && \
+    rm -r pcl
+
+
+# CPU TDSF
+# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/arrlee/cpu_tsdf.git && \
+#     cd cpu_tsdf && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r cpu_tsdf; fi
+
+RUN gcc -v
+
+
+# g2o
+# RUN rm -r /opt/ros/noetic/lib/libg2o_* /opt/ros/noetic/share/libg2o /opt/ros/noetic/lib/cmake/g2o/ && ldconfig
+RUN apt-get remove ros-noetic-libg2o libsuitesparse-dev libsuitesparseconfig5:amd64 -y
+RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o.git && \
+    cd g2o && \
+    sed -i '354s/11/17/' CMakeLists.txt && \
+    sed -i '356 i set(CMAKE_CXX_EXTENSIONS OFF)' CMakeLists.txt && \
+    cat CMakeLists.txt && \
+    mkdir build && cd build && \
+    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx2" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd .. && \
+    rm -r g2o
+
+# Clone source code
+# Build RTAB-Map project
+RUN source /ros_entrypoint.sh && \
+    git clone https://github.com/arrlee/rtabmap.git && \
+    cd rtabmap/build && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -mavx2 -g" -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Release -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -L .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd ../.. && \
+    rm -rf rtabmap && \
+    ldconfig
+
+# RelWithDebInfo
+RUN apt-get install valgrind -y
+# gef
+RUN apt-get install file python3 -y
+RUN gdb -nx -ex 'pi print(sys.version)' -ex quit
+RUN git clone --branch dev https://github.com/hugsy/gef.git && echo source `pwd`/gef/gef.py >> ~/.gdbinit
