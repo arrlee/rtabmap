@@ -2,6 +2,7 @@
 
 FROM ros:noetic-perception
 
+ARG CACHE_DATE=2016-01-01
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y git software-properties-common ros-noetic-rtabmap-ros && \
@@ -35,10 +36,12 @@ RUN git clone -b 3.3.7 https://gitlab.com/libeigen/eigen.git && \
 #    cd gtsam/3rdparty/ && \
 #    mv Eigen/ Eigen_ && \
 #    cd ../.. && \
+#  || /root/gtsam/build/CMakeFiles/CMakeOutput.log /root/gtsam/build/CMakeFiles/CMakeError.log
+#    cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -mavx2 -g -fmessage-length=0  -fopenmp -std=c++14 -O3 -DNDEBUG   -Wall -Wno-unknown-pragmas -msse4.2 -mfpmath=sse -march=native -fPIC -std=gnu++14 -MD -MT" -DGTSAM_WITH_TBB=OFF -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. &&  \
 RUN git clone -b 4.1.1 https://github.com/borglab/gtsam.git && \
     cd gtsam && \
     mkdir build && cd build && \
-    cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -mavx2 -std=c++17" -DGTSAM_WITH_TBB=OFF -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. && \
+    cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -mavx2 -g" -DGTSAM_WITH_TBB=OFF -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. &&  \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -64,7 +67,7 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git && \
     git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
+    cmake -DCMAKE_CXX_FLAGS="-g" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -277,7 +280,6 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then wget https://cmake.org/files/
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN apt-get install qtbase5-dev qt5-default qtbase5-dev-tools libqt5x11extras5-dev -y
-ARG CACHE_DATE=2016-01-01
 RUN date && dpkg -l
 
 # VTK
@@ -285,7 +287,7 @@ RUN apt-get remove libvtk7-dev libvtk7-qt-dev libvtk7.1p-qt -y
 RUN git clone -b v7.1.1 https://gitlab.kitware.com/vtk/vtk.git && \
     cd vtk && \
     mkdir build && cd build && \
-    /usr/local/bin/cmake -DModule_vtkIOMPIImage=ON -DModule_vtkIOMPIParallel:BOOL=ON -DModule_vtkFiltersParallelDIY2:BOOL=ON -DModule_vtkGUISupportQt:BOOL=ON -DBUILD_TESTING:BOOL=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx2" -DEigen3_DIR=/usr/local/include/eigen3/ \
+    /usr/local/bin/cmake -DModule_vtkIOMPIImage=ON -DModule_vtkIOMPIParallel:BOOL=ON -DModule_vtkFiltersParallelDIY2:BOOL=ON -DModule_vtkGUISupportQt:BOOL=ON -DBUILD_TESTING:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx -g" -DEigen3_DIR=/usr/local/include/eigen3/ \
      -DVTK_QT_VERSION:STRING=5 \
      -DQT_QMAKE_EXECUTABLE:PATH=/usr/lib/qt5/bin/qmake \
      -DVTK_Group_Qt:BOOL=ON \
@@ -301,7 +303,7 @@ RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
 RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
-    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_FLAGS="-std=c++17" -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=OFF -LA .. && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -309,8 +311,6 @@ RUN git clone -b 1.9.2 https://github.com/flann-lib/flann.git && \
 
 RUN git clone -b pcl-1.13.0 https://github.com/PointCloudLibrary/pcl && \
     cd pcl && \
-    sed -i '11s/14/17/' CMakeLists.txt && \
-    sed -i '14s/14/17/' CMakeLists.txt && \
     mkdir build && cd build && \
     cmake -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
@@ -338,11 +338,9 @@ RUN gcc -v
 RUN apt-get remove ros-noetic-libg2o libsuitesparse-dev libsuitesparseconfig5:amd64 -y
 RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o.git && \
     cd g2o && \
-    sed -i '354s/11/17/' CMakeLists.txt && \
-    sed -i '356 i set(CMAKE_CXX_EXTENSIONS OFF)' CMakeLists.txt && \
     cat CMakeLists.txt && \
     mkdir build && cd build && \
-    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx2" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-mavx" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd .. && \
@@ -353,12 +351,16 @@ RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o.git && \
 RUN source /ros_entrypoint.sh && \
     git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=Release -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -L .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -mavx -g" -DCMAKE_BUILD_TYPE=Release -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -L .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd ../.. && \
     rm -rf rtabmap && \
     ldconfig
 
+# RelWithDebInfo
 RUN apt-get install valgrind -y
-
+# gef
+RUN apt-get install file python3 -y
+RUN gdb -nx -ex 'pi print(sys.version)' -ex quit
+RUN git clone --branch dev https://github.com/hugsy/gef.git && echo source `pwd`/gef/gef.py >> ~/.gdbinit
