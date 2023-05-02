@@ -20,14 +20,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG CACHE_DATE=2016-01-02
 
 # cmake 3.2 for Open3D
-RUN wget https://cmake.org/files/v3.20/cmake-3.20.6.tar.gz && \
-    tar zxvf cmake-3.20.6.tar.gz && \
-    cd cmake-3.20.6 && \
+RUN wget https://cmake.org/files/v3.26/cmake-3.26.0.tar.gz && \
+    tar zxvf cmake-3.26.0.tar.gz && \
+    cd cmake-3.26.0 && \
     ./configure && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd .. && \
-    rm -r cmake-3.20.6
+    rm -r cmake-3.26.0
 
 # OpenCL
 RUN mkdir neo && cd neo && \
@@ -89,9 +89,20 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then echo "Installing libfreenect2
     cd && \
     rm -r libfreenect2; fi
 
+
+# TBB
+RUN apt-get remove libtbb2 libtbb-dev -y
+RUN git clone -b v2021.2.0 --single-branch https://github.com/oneapi-src/oneTBB.git && \
+    cd oneTBB && \
+    mkdir build &&  cd build && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -LA .. && \
+    cmake --build . -j $(nproc) && \
+    cmake --install . && \
+    cd && rm -rf oneTBB
+
 # Eigen
 RUN apt-get remove libeigen3-dev -y
-RUN git clone -b 3.3.9 https://gitlab.com/libeigen/eigen.git && \
+RUN git clone -b 3.3.9 --single-branch https://gitlab.com/libeigen/eigen.git && \
     cd eigen && \
     mkdir build && cd build && \
     cmake -DBUILD_WITH_MARCH_NATIVE=ON -DBoost_INCLUDE_DIR=$BOOSTDIR/include -LA .. && \
@@ -125,9 +136,13 @@ RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_
 #  || /root/gtsam/build/CMakeFiles/CMakeOutput.log /root/gtsam/build/CMakeFiles/CMakeError.log
 #    cmake -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -mavx2 -g -fmessage-length=0  -fopenmp -std=c++14 -O3 -DNDEBUG   -Wall -Wno-unknown-pragmas -msse4.2 -mfpmath=sse -march=native -fPIC -std=gnu++14 -MD -MT" -DGTSAM_WITH_TBB=OFF -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. &&  \
 RUN git clone -b 4.1.1 https://github.com/borglab/gtsam.git && \
+    wget https://github.com/borglab/gtsam/pull/1158.patch && \
     cd gtsam && \
+    git config --global user.name "FIRST_NAME LAST_NAME" && \
+    git config --global user.email "MY_NAME@example.com" && \
+    git am ../1158.patch && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_WITH_TBB=OFF -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. &&  \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_WITH_TBB=ON -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=Release -LA .. &&  \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -315,7 +330,7 @@ RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
 RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -344,31 +359,42 @@ RUN git clone -b pcl-1.13.0 https://github.com/PointCloudLibrary/pcl && \
 
 RUN gcc -v
 
-
+# suitesparse
+RUN apt-get remove ros-noetic-libg2o libsuitesparse-dev libsuitesparseconfig5:amd64 cmake -y
+RUN apt-get install libopenblas-dev gfortran libgmp-dev libmpfr-dev libmpfrc++-dev -y
+RUN git clone -b v6.0.3 --single-branch https://github.com/DrTimothyAldenDavis/SuiteSparse.git && \
+    cd SuiteSparse && \
+#    mkdir build && cd build && \
+#    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -LA .. && \
+#    make VERBOSE=1 -j$(nproc) && \
+    CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DDEMO=OFF -LA" make && \
+    make install && \
+    cd && \
+    rm -r SuiteSparse
 # g2o
-# RUN rm -r /opt/ros/noetic/lib/libg2o_* /opt/ros/noetic/share/libg2o /opt/ros/noetic/lib/cmake/g2o/ && ldconfig
-RUN apt-get remove ros-noetic-libg2o libsuitesparse-dev libsuitesparseconfig5:amd64 -y
-RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o.git && \
+# ToDo: Test G2O_FAST_MATH, G2O_USE_OPENMP
+RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle/g2o.git && \
     cd g2o && \
-    cat CMakeLists.txt && \
     mkdir build && cd build && \
     /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
-    cd .. && \
+    cd && \
     rm -r g2o
 
 # Clone source code
 # Build RTAB-Map project
 #    rm -rf rtabmap && \
-RUN source /ros_entrypoint.sh && \
-    git clone https://github.com/arrlee/rtabmap.git && \
+# RUN source /ros_entrypoint.sh && \
+RUN git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
     cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_BUILD_TYPE=Release -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -L .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd ../.. && \
     ldconfig
+
+RUN echo "#!/bin/bash" > /ros_entrypoint.sh && echo "rtabmap" >> /ros_entrypoint.sh
 
 # RelWithDebInfo
 RUN apt-get install valgrind -y
