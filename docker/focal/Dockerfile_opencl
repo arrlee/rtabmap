@@ -127,7 +127,7 @@ RUN apt-get install libgflags-dev libgoogle-glog-dev libgoogle-glog0v5 -y
 RUN git clone -b 2.1.0 --single-branch https://ceres-solver.googlesource.com/ceres-solver && \
     cd ceres-solver && \
     mkdir build && cd build && \
-    cmake -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    cmake -DCMAKE_CXX_STANDARD=14 -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -165,7 +165,7 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git && \
     git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
