@@ -122,6 +122,17 @@ RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_
     ./b2 -j$(nproc) cxxflags="-march=native"  cxxflags=" -faligned-new=64" && ./b2 headers && ./b2 install 
     
 
+# Ceres
+RUN apt-get install libgflags-dev libgoogle-glog-dev libgoogle-glog0v5 -y
+RUN git clone -b 2.1.0 --single-branch https://ceres-solver.googlesource.com/ceres-solver && \
+    cd ceres-solver && \
+    mkdir build && cd build && \
+    cmake -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    make VERBOSE=1 -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -rf ceres-solver
+
 # GTSAM
 # RUN add-apt-repository ppa:borglab/gtsam-release-4.0 -y
 # RUN apt install libgtsam-dev libgtsam-unstable-dev -y
