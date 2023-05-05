@@ -123,11 +123,12 @@ RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_
     
 
 # Ceres
+# RUN apt-get install libgflags-dev libgoogle-glog-dev libgoogle-glog0v5 -y
 RUN apt-get install libgflags-dev libgoogle-glog-dev libgoogle-glog0v5 -y
 RUN git clone -b 2.1.0 --single-branch https://ceres-solver.googlesource.com/ceres-solver && \
     cd ceres-solver && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_STANDARD=14 -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    /usr/local/bin/cmake -DCERES_THREADING_MODEL=OPENMP -DCMAKE_CXX_STANDARD=14 -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -165,8 +166,8 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git && \
     git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
-    make VERBOSE=1 -j$(nproc) && \
+    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
+    make VERBOSE=1 && \
     make install && \
     cd && \
     rm -r opencv_build opencv opencv_contrib
@@ -338,7 +339,8 @@ RUN git clone -b v7.1.1 https://gitlab.kitware.com/vtk/vtk.git && \
 
 # PCL : Point cloud library
 RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
-RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
+# RUN apt install libgtest-dev liblz4-dev python3.8-distutils -y
+RUN apt install liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
     cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
@@ -351,7 +353,7 @@ RUN git clone -b pcl-1.13.0 --single-branch https://github.com/PointCloudLibrary
     cd pcl && \
     mkdir build && cd build && \
     cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
-    make VERBOSE=1 -j$(nproc) && \
+    make VERBOSE=1 && \
     make install && \
     cd ../.. && \
     rm -r pcl
@@ -397,9 +399,14 @@ RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle
 # Build RTAB-Map project
 #    rm -rf rtabmap && \
 # RUN source /ros_entrypoint.sh && \
+# RUN find / -type f -iname -name '*thread*cmake'
+# RUN find / -type f -iname -name FindPthreads.cmake
+RUN apt-get install libpthread-stubs0-dev -y
+RUN find / -name FindPthreads.cmake
 RUN git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_BUILD_TYPE=Release -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -L .. && \
+    find / -name FindPthreads.cmake && \
+    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_BUILD_TYPE=Release -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -L .. || find . -name CMakeError.log -exec cat {} \; && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd ../.. && \
