@@ -707,7 +707,7 @@ IF(WITH_OKVIS)
        MESSAGE(STATUS "Found brisk: ${BRISK_INCLUDE_DIRS}")
        find_package(opengv REQUIRED)
        MESSAGE(STATUS "Found opengv: ${OPENGV_INCLUDE_DIRS}")
-       find_package(Ceres 1.9.0 REQUIRED EXACT) # OKVIS requires this specific version
+       find_package(Ceres 2.1.0 REQUIRED EXACT) # OKVIS requires this specific version
        MESSAGE(STATUS "Found ceres ${Ceres_VERSION}: ${CERES_INCLUDE_DIRS}")
     ENDIF(okvis_FOUND)
 ENDIF(WITH_OKVIS)
@@ -715,7 +715,8 @@ ENDIF(WITH_OKVIS)
 # If built with okvis, we found already ceres above
 IF(WITH_CERES)
   IF(NOT okvis_FOUND AND NOT floam_FOUND)
-    FIND_PACKAGE(Ceres QUIET)
+    # FIND_PACKAGE(Ceres QUIET)
+    FIND_PACKAGE(Ceres)
     MESSAGE(STATUS "Found ceres ${Ceres_VERSION}: ${CERES_INCLUDE_DIRS}")
   ENDIF(NOT okvis_FOUND AND NOT floam_FOUND)
 ELSEIF(Ceres_FOUND)
