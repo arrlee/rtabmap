@@ -716,7 +716,7 @@ ENDIF(WITH_OKVIS)
 IF(WITH_CERES)
   IF(NOT okvis_FOUND AND NOT floam_FOUND)
     # FIND_PACKAGE(Ceres QUIET)
-    FIND_PACKAGE(Ceres)
+    FIND_PACKAGE(Ceres REQUIRED) # todo: remove after ceres works
     MESSAGE(STATUS "Found ceres ${Ceres_VERSION}: ${CERES_INCLUDE_DIRS}")
   ENDIF(NOT okvis_FOUND AND NOT floam_FOUND)
 ELSEIF(Ceres_FOUND)
