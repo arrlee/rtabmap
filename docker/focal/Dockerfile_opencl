@@ -364,7 +364,7 @@ RUN apt install liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
     cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
-    make VERBOSE=1 -j$(nproc) && \
+    make -j$(nproc) && \
     make install && \
     cd && \
     rm -r flann
@@ -373,7 +373,7 @@ RUN git clone -b pcl-1.13.0 --single-branch https://github.com/PointCloudLibrary
     cd pcl && \
     mkdir build && cd build && \
     cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
-    make VERBOSE=1 && \
+    make -j2 && \
     make install && \
     cd ../.. && \
     rm -r pcl
