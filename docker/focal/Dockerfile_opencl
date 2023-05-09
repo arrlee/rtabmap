@@ -422,9 +422,11 @@ RUN git clone https://github.com/arrlee/rtabmap.git && \
     cd && \
     ldconfig
 
-# RUN git clone git://sourceware.org/git/binutils-gdb.git && \
-#     cd binutils-gdb && \
-#     mkdir build && cd build && \
+RUN apt-get install libmpfr-dev libgmp-dev texinfo bison flex
+RUN git clone git://sourceware.org/git/binutils-gdb.git && \
+    cd binutils-gdb && \
+    ./configure && \
+    make && make install
     
 
 RUN echo "#!/bin/bash" > /ros_entrypoint.sh && echo "gprofng collect app rtabmap" >> /ros_entrypoint.sh
