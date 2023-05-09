@@ -100,7 +100,7 @@ RUN apt-get remove libtbb2 libtbb-dev -y
 RUN git clone -b v2021.2.0 --single-branch https://github.com/oneapi-src/oneTBB.git && \
     cd oneTBB && \
     mkdir build &&  cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -LA .. && \
     cmake --build . -j $(nproc) && \
     cmake --install . && \
     cd && rm -rf oneTBB
@@ -124,7 +124,7 @@ RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_
     tar jxf boost_1_71_0.tar.bz2 && \
     cd boost_1_71_0 && \
     ./bootstrap.sh && \
-    ./b2 -j$(nproc) cxxflags="-march=native"  cxxflags=" -faligned-new=64" && ./b2 headers && ./b2 install 
+    ./b2 -j$(nproc) cxxflags="-march=native"  cxxflags=" -faligned-new" && ./b2 headers && ./b2 install 
     
 
 # suitesparse
@@ -134,7 +134,7 @@ RUN git clone -b v6.0.3 --single-branch https://github.com/DrTimothyAldenDavis/S
     cd SuiteSparse && \
     echo ${EnvBuildType} && \
 #    mkdir build && cd build && \
-#    cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -LA .. && \
+#    cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -LA .. && \
 #    make VERBOSE=1 -j$(nproc) && \
     CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=${EnvBuildType} -DENABLE_CUDA=OFF -DDEMO=OFF -LA" make && \
     make install && \
@@ -143,12 +143,12 @@ RUN git clone -b v6.0.3 --single-branch https://github.com/DrTimothyAldenDavis/S
 
 # Ceres
 # RUN apt-get install libgflags-dev libgoogle-glog-dev libgoogle-glog0v5 -y
-#    /usr/local/bin/cmake -DCERES_THREADING_MODEL=OPENMP -DCMAKE_CXX_STANDARD=14 -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+#    /usr/local/bin/cmake -DCERES_THREADING_MODEL=OPENMP -DCMAKE_CXX_STANDARD=14 -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
 RUN apt-get install libgflags-dev libgoogle-glog-dev libgoogle-glog0v5 -y
 RUN git clone -b 2.1.0 --single-branch https://ceres-solver.googlesource.com/ceres-solver && \
     cd ceres-solver && \
     mkdir build && cd build && \
-    /usr/local/bin/cmake -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    /usr/local/bin/cmake -DBUILD_EXAMPLES=OFF -DBUILD_TESTING:BOOL=OFF -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -174,7 +174,7 @@ RUN git clone -b 4.1.1 https://github.com/borglab/gtsam.git && \
     git config --global user.email "MY_NAME@example.com" && \
     git am ../1158.patch && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_WITH_TBB=ON -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=${EnvBuildType} -DGTSAM_BUILD_EXAMPLES_ALWAYS:BOOL=OFF -LA .. &&  \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_WITH_TBB=ON -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=${EnvBuildType} -DGTSAM_BUILD_EXAMPLES_ALWAYS:BOOL=OFF -LA .. &&  \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -186,8 +186,11 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.2.0 https://github.com/opencv/opencv.git && \
     git clone -b 4.2.0 https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new=64 -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF -LA ../opencv && \
-    make VERBOSE=1 && \
+    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
+             -DWITH_JPEG=ON \
+             -DBUILD_JPEG=OFF \
+             -LA ../opencv && \
+    make VERBOSE=0 -j$(nproc) && \
     make install && \
     cd && \
     rm -r opencv_build opencv opencv_contrib
@@ -199,7 +202,7 @@ RUN git clone https://github.com/ethz-asl/libnabo.git && \
     git checkout 3cab7eed92bd5d4aed997347b8c8a2692a83a532 && \
     mkdir build && \
     cd build && \
-    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DUSE_OPEN_CL:BOOL=FALSE -DLIBNABO_BUILD_EXAMPLES=OFF -DLIBNABO_BUILD_TESTS=OFF -DLIBNABO_BUILD_PYTHON=OFF .. -L && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DUSE_OPEN_CL:BOOL=FALSE -DLIBNABO_BUILD_EXAMPLES=OFF -DLIBNABO_BUILD_TESTS=OFF -DLIBNABO_BUILD_PYTHON=OFF .. -L && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -210,7 +213,7 @@ RUN git clone https://github.com/ethz-asl/libpointmatcher.git && \
     git checkout 76f99fce0fe69e6384102a0343fdf8d262626e1f && \
     mkdir build && \
     cd build && \
-    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DUSE_OPEN_CL:BOOL=OFF -L .. && \
+    cmake -DCMAKE_CXX_STANDARD=17 -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DUSE_OPEN_CL:BOOL=OFF -L .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -346,7 +349,7 @@ RUN apt-get remove libvtk7-dev libvtk7-qt-dev libvtk7.1p-qt -y
 RUN git clone -b v7.1.1 https://gitlab.kitware.com/vtk/vtk.git && \
     cd vtk && \
     mkdir build && cd build && \
-    /usr/local/bin/cmake -DModule_vtkIOMPIImage=ON -DModule_vtkIOMPIParallel:BOOL=ON -DModule_vtkFiltersParallelDIY2:BOOL=ON -DModule_vtkGUISupportQt:BOOL=ON -DBUILD_TESTING:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DEigen3_DIR=/usr/local/include/eigen3/ \
+    /usr/local/bin/cmake -DModule_vtkIOMPIImage=ON -DModule_vtkIOMPIParallel:BOOL=ON -DModule_vtkFiltersParallelDIY2:BOOL=ON -DModule_vtkGUISupportQt:BOOL=ON -DBUILD_TESTING:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DEigen3_DIR=/usr/local/include/eigen3/ \
      -DVTK_QT_VERSION:STRING=5 \
      -DQT_QMAKE_EXECUTABLE:PATH=/usr/lib/qt5/bin/qmake \
      -DVTK_Group_Qt:BOOL=ON \
@@ -363,7 +366,7 @@ RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
 RUN apt install liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
     make -j$(nproc) && \
     make install && \
     cd && \
@@ -372,7 +375,7 @@ RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git &&
 RUN git clone -b pcl-1.13.0 --single-branch https://github.com/PointCloudLibrary/pcl && \
     cd pcl && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
     make -j2 && \
     make install && \
     cd ../.. && \
@@ -397,7 +400,7 @@ RUN gcc -v
 RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle/g2o.git && \
     cd g2o && \
     mkdir build && cd build && \
-    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -413,13 +416,18 @@ RUN apt-get install libpthread-stubs0-dev -y
 RUN find / -name FindPthreads.cmake
 RUN git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new=64 -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -LA .. && \
+    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
     ldconfig
 
-RUN echo "#!/bin/bash" > /ros_entrypoint.sh && echo "rtabmap" >> /ros_entrypoint.sh
+# RUN git clone git://sourceware.org/git/binutils-gdb.git && \
+#     cd binutils-gdb && \
+#     mkdir build && cd build && \
+    
+
+RUN echo "#!/bin/bash" > /ros_entrypoint.sh && echo "gprofng collect app rtabmap" >> /ros_entrypoint.sh
 
 # RelWithDebInfo
 RUN apt-get install valgrind -y
