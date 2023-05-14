@@ -1,4 +1,5 @@
 # Image: introlab3it/rtabmap:focal
+# https://stackoverflow.com/questions/47878352/how-to-check-if-compiled-code-uses-sse-and-avx-instructions
 
 FROM ros:noetic-perception
 
@@ -174,7 +175,7 @@ RUN git clone -b 4.1.1 --single-branch  https://github.com/borglab/gtsam.git && 
     git config --global user.email "MY_NAME@example.com" && \
     git am ../1158.patch && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_WITH_TBB=ON -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=${EnvBuildType} -DGTSAM_BUILD_EXAMPLES_ALWAYS:BOOL=OFF -LA .. &&  \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g -fopt-info" -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=ON -DGTSAM_WITH_TBB=ON -DGTSAM_USE_SYSTEM_EIGEN:BOOL=ON -DEigen3_DIR=/usr/local/include/eigen3/ -DCMAKE_BUILD_TYPE=${EnvBuildType} -DGTSAM_BUILD_EXAMPLES_ALWAYS:BOOL=OFF -LA .. &&  \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
@@ -186,7 +187,7 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.2.0 --single-branch https://github.com/opencv/opencv.git && \
     git clone -b 4.2.0 --single-branch https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
+    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g -fopt-info" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
              -DWITH_JPEG=ON \
              -DBUILD_JPEG=OFF \
              -LA ../opencv && \
@@ -370,11 +371,23 @@ RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git &&
     make install && \
     cd && \
     rm -r flann
-
-RUN git clone -b pcl-1.13.0 --single-branch https://github.com/PointCloudLibrary/pcl && \
+# RUN git clone -b v1.4.3 https://github.com/jlblancoc/nanoflann.git && \
+#     cd nanoflann && \
+#     mkdir build && cd build && \
+#     cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON .. -LA && \
+#     make VERBOSE=1 -j$(nproc) && \
+#     make install && \
+#     cd && \
+#     rm -r nanoflann
+# cmake -DBUILD_kdtree_nanoflann=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
+RUN git clone -b pcl-1.12.1 --single-branch https://github.com/PointCloudLibrary/pcl && \
+    wget https://github.com/PointCloudLibrary/pcl/pull/5299.patch && \
     cd pcl && \
+    git config --global user.name "FIRST_NAME LAST_NAME" && \
+    git config --global user.email "MY_NAME@example.com" && \
+    git am ../5299.patch && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g -fopt-info" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
     make -j2 && \
     make install && \
     cd ../.. && \
