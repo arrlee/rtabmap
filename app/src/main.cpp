@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vtkVersionMacros.h>
 #include <vtkObject.h>
+#include <opencv2/core/ocl.hpp>
 
 #if VTK_MAJOR_VERSION > 9 || (VTK_MAJOR_VERSION==9 && VTK_MINOR_VERSION >= 1)
 #include <QVTKRenderWidget.h>
@@ -83,6 +84,7 @@ int main(int argc, char* argv[])
     }
 
 	printf("Program started...\n");
+	printf("ocl::useOpenCL()=%i\n", ocl::useOpenCL());
 
 	UEventsManager::addHandler(mainWindow);
 

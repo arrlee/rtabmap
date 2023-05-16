@@ -137,8 +137,8 @@ RUN git clone -b v6.0.3 --single-branch https://github.com/DrTimothyAldenDavis/S
 #    mkdir build && cd build && \
 #    cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -LA .. && \
 #    make VERBOSE=1 -j$(nproc) && \
-    CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=${EnvBuildType} -DENABLE_CUDA=OFF -DDEMO=OFF -LA" make && \
-    make install && \
+    CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=${EnvBuildType} -DENABLE_CUDA=OFF -DDEMO=OFF -DCMAKE_C_FLAGS=\"-march=native -g\" -DCMAKE_CXX_FLAGS=\"-march=native -faligned-new -g\" -LA" make && \
+    make VERBOSE=1 install && \
     cd && \
     rm -r SuiteSparse
 
@@ -183,11 +183,13 @@ RUN git clone -b 4.1.1 --single-branch  https://github.com/borglab/gtsam.git && 
 
 
 # OpenCV
+# todo: test WITH_OPENMP, version 4.7.0
+# todo: opencl with CV_OPENCL_RUN_VERBOSE
 RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev libopencv-contrib4.2 libopencv-core4.2
 RUN git clone -b 4.2.0 --single-branch https://github.com/opencv/opencv.git && \
     git clone -b 4.2.0 --single-branch https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g -fopt-info" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=OFF -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -D CMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
+    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g -fopt-info" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=ON -DCV_OPENCL_RUN_VERBOSE=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -DCMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
              -DWITH_JPEG=ON \
              -DBUILD_JPEG=OFF \
              -LA ../opencv && \
@@ -366,7 +368,7 @@ RUN apt-get remove -y libpcl-dev libpcl-common1.10 libpcl-people1.10
 RUN apt install liblz4-dev python3.8-distutils -y
 RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git && \
     cd flann && mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_apps=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON_BINDINGS=OFF -DBUILD_MATLAB_BINDINGS=OFF -DBUILD_DOC=OFF -DBUILD_tools=OFF -DBUILD_WITH_MARCH_NATIVE=ON -LA .. && \
     make -j$(nproc) && \
     make install && \
     cd && \
@@ -380,14 +382,10 @@ RUN git clone -b 1.9.2 --single-branch https://github.com/flann-lib/flann.git &&
 #     cd && \
 #     rm -r nanoflann
 # cmake -DBUILD_kdtree_nanoflann=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
-RUN git clone -b pcl-1.12.1 --single-branch https://github.com/PointCloudLibrary/pcl && \
-    wget https://github.com/PointCloudLibrary/pcl/pull/5299.patch && \
+RUN git clone -b pcl-1.13.0 --single-branch https://github.com/PointCloudLibrary/pcl && \
     cd pcl && \
-    git config --global user.name "FIRST_NAME LAST_NAME" && \
-    git config --global user.email "MY_NAME@example.com" && \
-    git am ../5299.patch && \
     mkdir build && cd build && \
-    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g -fopt-info" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
+    cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DWITH_CUDA:BOOL=OFF -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DPCL_ENABLE_MARCHNATIVE:BOOL=ON -LA .. && \
     make -j2 && \
     make install && \
     cd ../.. && \
@@ -425,7 +423,7 @@ RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle
 RUN apt-get install libpthread-stubs0-dev -y
 RUN git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -LA .. && \
+    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=OFF -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
