@@ -84,7 +84,8 @@ int main(int argc, char* argv[])
     }
 
 	printf("Program started...\n");
-	printf("ocl::useOpenCL()=%i\n", cv::ocl::useOpenCL());
+	cv::ocl::setUseOpenCL(true);
+	printf("ocl::useOpenCL()=%i, activated=%d\n", cv::ocl::useOpenCL(), cv::ocl::isOpenCLActivated());
 
 	UEventsManager::addHandler(mainWindow);
 
