@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkVersionMacros.h>
 #include <vtkObject.h>
 
+
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/ocl_genbase.hpp"
 #include "opencv2/core/opencl/ocl_defs.hpp"
@@ -88,7 +89,15 @@ int main(int argc, char* argv[])
 
 	printf("Program started...\n");
 	cv::ocl::setUseOpenCL(true);
+        cout << cv::ocl::haveOpenCL() << endl;
 	printf("ocl::useOpenCL()=%i, activated=%d\n", cv::ocl::useOpenCL(), cv::ocl::isOpenCLActivated());
+        if  ( ! cv::ocl::haveOpenCL ())
+        {
+
+                cout  <<  "OpenCL IS not avaiable ..."  <<  endl ;
+                return 0;
+        }
+
 
 	UEventsManager::addHandler(mainWindow);
 
