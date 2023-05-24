@@ -39,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkVersionMacros.h>
 #include <vtkObject.h>
 
-
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/ocl_genbase.hpp"
 #include "opencv2/core/opencl/ocl_defs.hpp"
