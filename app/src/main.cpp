@@ -39,10 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkVersionMacros.h>
 #include <vtkObject.h>
 
-#include "opencv2/core/ocl.hpp"
-#include "opencv2/core/ocl_genbase.hpp"
-#include "opencv2/core/opencl/ocl_defs.hpp"
-
 #if VTK_MAJOR_VERSION > 9 || (VTK_MAJOR_VERSION==9 && VTK_MINOR_VERSION >= 1)
 #include <QVTKRenderWidget.h>
 #endif
@@ -85,10 +81,6 @@ int main(int argc, char* argv[])
             database = value;
         }
     }
-
-	printf("Program started...\n");
-	cv::ocl::setUseOpenCL(true);
-	printf("ocl::useOpenCL()=%i, activated=%d\n", cv::ocl::useOpenCL(), cv::ocl::isOpenCLActivated());
 
 	UEventsManager::addHandler(mainWindow);
 
