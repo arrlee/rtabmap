@@ -11,11 +11,8 @@ RUN date && dpkg -l
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y git software-properties-common ros-noetic-rtabmap-ros && \
-    apt-get remove -y ros-noetic-rtabmap && \
-    rm -rf /var/lib/apt/lists/
-
-RUN apt-get update && apt-get install -y curl wget
+    apt-get install -y git software-properties-common curl wget && \
+    apt-get remove -y ros-noetic-rtabmap ros-noetic-libg2o
 
 WORKDIR /root/
 
@@ -37,8 +34,7 @@ RUN wget https://cmake.org/files/v3.26/cmake-3.26.0.tar.gz && \
     rm -r cmake-3.26.0
 
 # OpenCL
-#    apt install -y clinfo intel-gpu-tools && \
-# apt install ocl-icd-opencl-dev
+#  apt install -y clinfo intel-gpu-tools
 RUN mkdir neo && cd neo && \
     wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.13230.7/intel-igc-core_1.0.13230.7_amd64.deb && \
     wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.13230.7/intel-igc-opencl_1.0.13230.7_amd64.deb && \
@@ -47,8 +43,8 @@ RUN mkdir neo && cd neo && \
     wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-opencl-icd-dbgsym_23.05.25593.11_amd64.ddeb && \
     wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-opencl-icd_23.05.25593.11_amd64.deb && \
     wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/libigdgmm12_22.3.0_amd64.deb && \
-    apt install ./*.deb ocl-icd-opencl-dev && \
-    rm -rf /var/lib/apt/lists/
+    apt install -y ./*.deb ocl-icd-opencl-dev clinfo && \
+    rm -rf /var/lib/apt/lists/ && \
     rm -rf neo
 
 
@@ -443,7 +439,8 @@ RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle
 RUN apt-get install libpthread-stubs0-dev -y
 RUN apt-get install vim strace -y
 RUN git clone https://github.com/arrlee/rtabmap.git && \
-    cd rtabmap/build && \
+    cd rtabmap && \
+    mkdir -p build && cd build && \
     /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=OFF -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
