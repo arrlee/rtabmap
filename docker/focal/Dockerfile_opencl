@@ -202,7 +202,7 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.7.0 --single-branch https://github.com/opencv/opencv.git && \
     git clone -b 4.7.0 --single-branch https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=ON -DCV_OPENCL_RUN_VERBOSE=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -DCMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
+    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_TBB=ON -DWITH_OPENCL=ON -DCV_OPENCL_RUN_VERBOSE=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -DCMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
              -DWITH_JPEG=ON \
              -DBUILD_JPEG=OFF \
              -LA ../opencv && \

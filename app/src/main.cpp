@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/ocl_genbase.hpp"
 #include "opencv2/core/opencl/ocl_defs.hpp"
+#include <Eigen/Core>
 
 #if VTK_MAJOR_VERSION > 9 || (VTK_MAJOR_VERSION==9 && VTK_MINOR_VERSION >= 1)
 #include <QVTKRenderWidget.h>
@@ -87,6 +88,7 @@ int main(int argc, char* argv[])
     }
 
 	printf("Program started...\n");
+        printf(" Eigen is using %d threads\n", Eigen::nbThreads());
 	cv::ocl::setUseOpenCL(true);
         cout << cv::ocl::haveOpenCL() << endl;
 	printf("ocl::useOpenCL()=%i, activated=%d\n", cv::ocl::useOpenCL(), cv::ocl::isOpenCLActivated());
