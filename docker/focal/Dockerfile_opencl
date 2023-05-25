@@ -198,7 +198,7 @@ RUN apt-get remove -y libopencv-dev libopencv-contrib-dev libopencv-core-dev lib
 RUN git clone -b 4.7.0 --single-branch https://github.com/opencv/opencv.git && \
     git clone -b 4.7.0 --single-branch https://github.com/opencv/opencv_contrib.git && \
     mkdir opencv_build && cd opencv_build && \
-    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_OPENCL=ON -DCV_OPENCL_RUN_VERBOSE=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -DCMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
+    cmake -DOPENCV_SKIP_CMAKE_CXX_STANDARD=ON -DCMAKE_CXX_FLAGS="-std=c++14 -march=native -faligned-new -g" -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -DOPENCV_ENABLE_NONFREE:BOOL=ON -DWITH_TBB=ON -DWITH_OPENCL=ON -DCV_OPENCL_RUN_VERBOSE=ON -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules -DCMAKE_INSTALL_PREFIX=/usr/local -DCPU_BASELINE=AVX2 -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_face=OFF -DBUILD_opencv_sfm:BOOL=OFF -DBUILD_opencv_apps=OFF \
              -DWITH_JPEG=ON \
              -DBUILD_JPEG=OFF \
              -LA ../opencv && \
@@ -407,27 +407,23 @@ RUN git clone -b pcl-1.13.0 --single-branch https://github.com/PointCloudLibrary
 
 
 # CPU TDSF
-# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/arrlee/cpu_tsdf.git && \
-#     cd cpu_tsdf && \
-#     mkdir build && \
-#     cd build && \
-#     cmake .. && \
-#     make -j$(nproc) && \
-#     make install && \
-#     cd && \
-#     rm -r cpu_tsdf; fi
-
-RUN gcc -v
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone https://github.com/sdmiller/cpu_tsdf.git && \
+    cd cpu_tsdf && \
+    mkdir build && \
+    cd build && \
+    cmake .. -LA && \
+    make -j$(nproc) && \
+    make install && \
+    cd && \
+    rm -r cpu_tsdf; fi
 
 # g2o
-# ToDo: Test G2O_FAST_MATH, G2O_USE_OPENMP
-# FastMath seems to give a slight performance advantage, but needs more testing
 # OpenMP slightly slower by my own measurements, also noted in github: https://github.com/RainerKuemmerle/g2o/blob/master/CMakeLists.txt
 #    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DG2O_USE_OPENMP=ON -DG2O_FAST_MATH=ON -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
 RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle/g2o.git && \
     cd g2o && \
     mkdir build && cd build && \
-    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DG2O_USE_OPENMP=ON -DG2O_FAST_MATH=ON -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
+    /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=${EnvBuildType} -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DG2O_USE_OPENMP=OFF -DG2O_FAST_MATH=ON -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF -DEigen3_DIR=/usr/local/include/eigen3/ -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
