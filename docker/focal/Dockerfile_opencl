@@ -336,20 +336,20 @@ RUN git clone https://github.com/ethz-asl/libpointmatcher.git && \
 #     rm -r OpenChisel; fi
 
 
-# RUN apt-get update && \
-#     apt-get install -y llvm-dev libc++abi-dev libc++-dev
+RUN apt-get update && \
+    apt-get install -y llvm-dev libc++abi-dev libc++-dev
 
 # Open3D
-# RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone -b v0.16.0 https://github.com/isl-org/Open3D.git && \
-#      cd Open3D && \
-#      mkdir build && \
-#      cd build && \
-#      /usr/local/bin/cmake -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_SHARED_LIBS=ON -DGLIBCXX_USE_CXX11_ABI=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} .. && \
-#      make -j$(nproc) && \
-#      make install && \
-#      cd && \
-#      rm -r Open3D; fi
-#     
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone -b v0.16.0 https://github.com/isl-org/Open3D.git && \
+     cd Open3D && \
+     mkdir build && \
+     cd build && \
+     /usr/local/bin/cmake -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_SHARED_LIBS=ON -DGLIBCXX_USE_CXX11_ABI=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -Wno-dev .. && \
+     make -j$(nproc) && \
+     make install && \
+     cd && \
+     rm -r Open3D; fi
+    
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -437,7 +437,7 @@ RUN apt-get install vim strace -y
 RUN git clone https://github.com/arrlee/rtabmap.git && \
     cd rtabmap && \
     mkdir -p build && cd build && \
-    /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=OFF -LA .. && \
+    /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=ON -DWITH_CERES=OFF -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
