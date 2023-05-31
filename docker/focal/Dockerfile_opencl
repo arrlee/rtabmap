@@ -340,11 +340,11 @@ RUN apt-get update && \
     apt-get install -y llvm-dev libc++abi-dev libc++-dev
 
 # Open3D
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone -b v0.16.0 https://github.com/isl-org/Open3D.git && \
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then git clone -b v0.17.0 https://github.com/isl-org/Open3D.git && \
      cd Open3D && \
      mkdir build && \
      cd build && \
-     /usr/local/bin/cmake -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_SHARED_LIBS=ON -DGLIBCXX_USE_CXX11_ABI=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -Wno-dev .. && \
+     /usr/local/bin/cmake -DBUILD_WITH_MARCH_NATIVE=ON -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DBUILD_SHARED_LIBS=ON -DGLIBCXX_USE_CXX11_ABI=ON -DCMAKE_BUILD_TYPE=${EnvBuildType} -Wno-dev -DUSE_SYSTEM_EIGEN3=OFF -DUSE_SYSTEM_TBB=OFF -DWITH_SIMD=ON -DBUILD_PYTHON_MODULE=OFF -DBUILD_GUI=OFF -DBUILD_WEBRTC=OFF -LA .. && \
      make -j$(nproc) && \
      make install && \
      cd && \
