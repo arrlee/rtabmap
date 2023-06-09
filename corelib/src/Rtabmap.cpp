@@ -147,6 +147,7 @@ Rtabmap::Rtabmap() :
 	_loopCovLimited(Parameters::defaultRGBDLoopCovLimited()),
 	_loopGPS(Parameters::defaultRtabmapLoopGPS()),
 	_maxOdomCacheSize(Parameters::defaultRGBDMaxOdomCacheSize()),
+	_localizationSmoothing(Parameters::defaultRGBDLocalizationSmoothing()),
 	_createGlobalScanMap(Parameters::defaultRGBDProximityGlobalScanMap()),
 	_markerPriorsLinearVariance(Parameters::defaultMarkerPriorsVarianceLinear()),
 	_markerPriorsAngularVariance(Parameters::defaultMarkerPriorsVarianceAngular()),
@@ -618,6 +619,7 @@ void Rtabmap::parseParameters(const ParametersMap & parameters)
 	Parameters::parse(parameters, Parameters::kRGBDLoopCovLimited(), _loopCovLimited);
 	Parameters::parse(parameters, Parameters::kRtabmapLoopGPS(), _loopGPS);
 	Parameters::parse(parameters, Parameters::kRGBDMaxOdomCacheSize(), _maxOdomCacheSize);
+	Parameters::parse(parameters, Parameters::kRGBDLocalizationSmoothing(), _localizationSmoothing);
 	Parameters::parse(parameters, Parameters::kRGBDProximityGlobalScanMap(), _createGlobalScanMap);
 
 	Parameters::parse(parameters, Parameters::kMarkerPriorsVarianceLinear(), _markerPriorsLinearVariance);
@@ -849,7 +851,7 @@ void Rtabmap::setInitialPose(const Transform & initialPose)
 		if(!_memory->isIncremental())
 		{
 			_lastLocalizationPose = initialPose;
-			_localizationCovariance = 0;
+			_localizationCovariance = cv::Mat();
 			_lastLocalizationNodeId = 0;
 			_odomCachePoses.clear();
 			_odomCacheConstraints.clear();
@@ -1690,11 +1692,11 @@ bool Rtabmap::process(
 			odomCovariance.type() == CV_64FC1 &&
 			odomCovariance.at<double>(0,0) < 1)
 		{
-			if(_localizationCovariance.empty() || _lastLocalizationPose.isNull())
+			if( _memory->isIncremental() && _localizationCovariance.empty())
 			{
-				_localizationCovariance = odomCovariance.clone();
+				_localizationCovariance = cv::Mat::zeros(6,6,CV_64FC1);
 			}
-			else
+			if(_localizationCovariance.total() == 36)
 			{
 #ifdef RTABMAP_MRPT
 				// Transform odometry covariance (which in base frame) into global frame
@@ -1712,7 +1714,6 @@ bool Rtabmap::process(
 				// build rtabmap with MRPT to use approach above.
 				_localizationCovariance += odomCovariance;
 #endif
-
 			}
 		}
 		_lastLocalizationPose = newPose; // keep in cache the latest corrected pose
@@ -3173,10 +3174,10 @@ bool Rtabmap::process(
 							&maxLinearLink,
 							&maxAngularLink,
 							_graphOptimizer->isSlam2d());
-					if(maxLinearLink == 0 && maxAngularLink==0 && _maxOdomCacheSize>0)
+					if(maxLinearLink == 0 && maxAngularLink==0)
 					{
-						UWARN("Could not compute graph errors! Wrong loop closures could be accepted!");
-						optPoses = posesOut;
+						UWARN("Could not compute graph errors! Rejecting localization!");
+						rejectLocalization = true;
 					}
 
 					if(maxLinearLink)
@@ -3287,10 +3288,10 @@ bool Rtabmap::process(
 									&maxLinearLink,
 									&maxAngularLink,
 									_graphOptimizer->isSlam2d());
-							if(maxLinearLink == 0 && maxAngularLink==0 && _maxOdomCacheSize>0)
+							if(maxLinearLink == 0 && maxAngularLink==0)
 							{
-								UWARN("Could not compute graph errors! Wrong loop closures could be accepted!");
-								optPoses = posesOut;
+								UWARN("Could not compute graph errors! Rejecting localization!");
+								rejectLocalization = true;
 							}
 
 							if(maxLinearLink)
@@ -3395,16 +3396,26 @@ bool Rtabmap::process(
 					Transform newOptPoseInv = optPoses.at(signature->id()).inverse();
 					for(std::multimap<int, Link>::iterator iter=localizationLinks.begin(); iter!=localizationLinks.end(); ++iter)
 					{
-						Transform newT = newOptPoseInv * optPoses.at(iter->first);
-						UDEBUG("Adjusted localization link %d->%d after optimization", iter->second.from(), iter->second.to());
-						UDEBUG("from %s", iter->second.transform().prettyPrint().c_str());
-						UDEBUG("  to %s", newT.prettyPrint().c_str());
-						iter->second.setTransform(newT);
+						if(!_localizationSmoothing)
+						{
+							// Add original link without optimization
+							UDEBUG("Adding new odom cache constraint %d->%d (%s)", 
+								iter->second.from(), iter->second.to(), iter->second.transform().prettyPrint().c_str());
+						}
+						else
+						{
+							// Adjust with optimized poses, this will smooth the localization
+							Transform newT = newOptPoseInv * optPoses.at(iter->first);
+							UDEBUG("Adjusted localization link %d->%d after optimization", iter->second.from(), iter->second.to());
+							UDEBUG("from %s", iter->second.transform().prettyPrint().c_str());
+							UDEBUG("  to %s", newT.prettyPrint().c_str());
+							iter->second.setTransform(newT);
 
-						// Update link in the referred signatures
-						if(iter->first > 0)
-							_memory->updateLink(iter->second, false);
-
+							// Update link in the referred signatures
+							if(iter->first > 0)
+								_memory->updateLink(iter->second, false);
+						}
+						
 						_odomCacheConstraints.insert(std::make_pair(signature->id(), iter->second));
 					}
 
