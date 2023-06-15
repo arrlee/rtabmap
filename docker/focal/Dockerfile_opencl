@@ -47,10 +47,9 @@ RUN mkdir neo && cd neo && \
     wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-opencl-icd-dbgsym_23.05.25593.11_amd64.ddeb && \
     wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/intel-opencl-icd_23.05.25593.11_amd64.deb && \
     wget https://github.com/intel/compute-runtime/releases/download/23.05.25593.11/libigdgmm12_22.3.0_amd64.deb && \
-    apt install ./*.deb ocl-icd-opencl-dev && \
-    rm -rf /var/lib/apt/lists/
+    apt install -y ./*.deb ocl-icd-opencl-dev && \
+    rm -rf /var/lib/apt/lists/ && \
     rm -rf neo
-
 
 # PDAL
 RUN apt-get update && \ 
@@ -442,9 +441,9 @@ RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle
 #    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=OFF -LA .. && \
 RUN apt-get install libpthread-stubs0-dev -y
 RUN apt-get install vim strace -y
-RUN git clone https://github.com/arrlee/rtabmap.git && \
+RUN git clone -b feature/surf_opencl https://github.com/arrlee/rtabmap.git && \
     cd rtabmap/build && \
-    /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=OFF -LA .. && \
+    /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -DWITH_OPENCL -LA .. && \
     make VERBOSE=1 -j$(nproc) && \
     make install && \
     cd && \
