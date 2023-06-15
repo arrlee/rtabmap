@@ -1,0 +1,11 @@
+--- opencv/modules/core/include/opencv2/core/opencl/ocl_defs.hpp	2023-05-20 12:04:28.758878555 +0200
++++ /usr/local/include/opencv4/opencv2/core/opencl/ocl_defs.hpp	2023-05-21 09:52:50.972573827 +0200
+@@ -9,7 +9,7 @@
+ #define OPENCV_CORE_OPENCL_DEFS_HPP
+ 
+ #include "opencv2/core/utility.hpp"
+-#include "cvconfig.h"
++#include "opencv2/cvconfig.h"
+ 
+ namespace cv { namespace ocl {
+ #ifdef HAVE_OPENCL

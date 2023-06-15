@@ -439,12 +439,16 @@ RUN git clone -b 20201223_git --single-branch https://github.com/RainerKuemmerle
 # Build RTAB-Map project
 # RUN source /ros_entrypoint.sh && \
 #    /usr/local/bin/cmake --trace-expand -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=OFF -LA .. && \
+#    make VERBOSE=1 -j$(nproc) && \
 RUN apt-get install libpthread-stubs0-dev -y
 RUN apt-get install vim strace -y
+ADD docker/focal/opencv_cvonfig.patch .
+RUN patch /usr/local/include/opencv4/opencv2/core/opencl/ocl_defs.hpp < opencv_cvonfig.patch
 RUN git clone -b feature/surf_opencl https://github.com/arrlee/rtabmap.git && \
-    cd rtabmap/build && \
-    /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -DWITH_OPENCL -LA .. && \
-    make VERBOSE=1 -j$(nproc) && \
+    cd rtabmap && \
+    mkdir -p build && cd build && \
+    /usr/local/bin/cmake -DCMAKE_CXX_FLAGS="-march=native -faligned-new -g" -DCMAKE_BUILD_TYPE=${EnvBuildType} -DCPUTSDF_DIR=/usr/local/share/cpu_tsdf/ -DWITH_CCCORELIB=OFF -DWITH_ALICE_VISION=OFF -DWITH_CPUTSDF=OFF -DWITH_OPEN3D=OFF -DWITH_CERES=ON -DWITH_OPENCL=ON -LA .. && \
+    make VERBOSE=1 && \
     make install && \
     cd && \
     ldconfig
