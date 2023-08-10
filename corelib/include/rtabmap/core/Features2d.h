@@ -271,7 +271,6 @@ private:
 
 	cv::Ptr<CV_SURF> _surf;
 	cv::Ptr<CV_SURF_GPU> _gpuSurf;
-
 };
 
 //SIFT

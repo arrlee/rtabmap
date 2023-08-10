@@ -31,10 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "rtabmap/core/Stereo.h"
 #include "rtabmap/core/util2d.h"
 #include "rtabmap/utilite/UStl.h"
-#include "rtabmap/utilite/UConversion.h"
-#include "rtabmap/utilite/ULogger.h"
-#include "rtabmap/utilite/UMath.h"
-#include "rtabmap/utilite/ULogger.h"
 #include "rtabmap/utilite/UTimer.h"
 #include <opencv2/imgproc/imgproc_c.h>
 #include <opencv2/core/version.hpp>
@@ -43,6 +39,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef  RTABMAP_OPENCL
 #include <opencv2/cvconfig.h>
 #endif
+
+#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)
+#include "opencv2/core/ocl.hpp"
+#endif
+
 
 #ifdef RTABMAP_ORB_OCTREE
 #include "opencv/ORBextractor.h"
@@ -958,11 +959,6 @@ SURF::SURF(const ParametersMap & parameters) :
 		gpuVersion_(Parameters::defaultSURFGpuVersion())
 {
 	parseParameters(parameters);
-    UINFO("Initializing SURF");
-    void *array[10];
-    size_t size;
-    size = backtrace(array, 10);
-    backtrace_symbols_fd(array, size, STDOUT_FILENO);
 }
 
 SURF::~SURF()
@@ -1027,6 +1023,7 @@ std::vector<cv::KeyPoint> SURF::generateKeypointsImpl(const cv::Mat & image, con
 	{
 		maskRoi = cv::Mat(mask, roi);
 	}
+
 	if(gpuVersion_)
 	{
 #if CV_MAJOR_VERSION < 3
@@ -1037,52 +1034,72 @@ std::vector<cv::KeyPoint> SURF::generateKeypointsImpl(const cv::Mat & image, con
 		cv::cuda::GpuMat imgGpu(imgRoi);
 		cv::cuda::GpuMat maskGpu(maskRoi);
 		(*_gpuSurf.get())(imgGpu, maskGpu, keypoints);
-#endif
+#endif // CV_MAJOR_VERSION < 3
 	}
 	else
 	{
-                UINFO("Starting SURF");
-                std::clock_t c_start = std::clock();
-                auto t_start = std::chrono::high_resolution_clock::now();
+        std::clock_t c_start = std::clock();
+        auto t_start = std::chrono::high_resolution_clock::now();
 
-#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL) // rtabmap and opencv are built with OpenCL support
-                UDEBUG("Using OpenCL version of SURF");
-                std::vector<cv::KeyPoint> ocl_keypoints;
+        if  (
+#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)  // rtabmap and opencv are built with OpenCL support
+            cv::ocl::haveOpenCL()
+#else
+            false
+#endif // defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)
+        )
+        {
+
+            // UINFO("Starting SURF");
+
+            // UDEBUG("Using OpenCL version of SURF");
+
+            std::vector<cv::KeyPoint> ocl_keypoints;
+
+            try {
                 _surf->detectAndCompute(imgRoi.getUMat(cv::ACCESS_READ),
-                                                cv::noArray(),
-                                                ocl_keypoints,
-                                                cv::noArray(),
-                                                false);
+                                        cv::noArray(),
+                                        ocl_keypoints,
+                                        cv::noArray(),
+                                        false);
 
                 // opencl implementation cannot handle masks, so we need to implement
-                // it ourselfs
-                if( !mask.empty() ) {
+                // it ourselves
+                if (!mask.empty()) {
                     std::copy_if(
                             ocl_keypoints.begin(),
                             ocl_keypoints.end(),
                             std::back_inserter(keypoints), [maskRoi](cv::KeyPoint kp) {
                                 return maskRoi.at<uchar>(kp.pt.y, kp.pt.x) != 0;
-                    });
+                            });
                 } else {
                     keypoints = ocl_keypoints;
                 }
-#else
-		        _surf->detect(imgRoi, keypoints, maskRoi);
-#endif
+            } catch (cv::Exception &e) {
+                UERROR(e.what());
+                if (e.code == CV_StsAssert) {
+                    UERROR("Try decreasing the number of SURF octaves or increasing the captured image size.");
+                }
+            }
+        }
+        else {
+            _surf->detect(imgRoi, keypoints, maskRoi);
+        }
 
-                std::clock_t c_end = std::clock();
-                auto t_end = std::chrono::high_resolution_clock::now();
-                std::cout << std::fixed << std::setprecision(2) << "CPU time used: "
-                          << 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC << " ms\n"
-                          << "SURF KP Wall clock time passed: "
-                          << std::chrono::duration<double, std::milli>(t_end-t_start).count()
-                          << " ms\n";
-                UINFO("SURF done");
-
+        std::clock_t c_end = std::clock();
+        auto t_end = std::chrono::high_resolution_clock::now();
+        std::cout << std::fixed << std::setprecision(2)
+            << "SURF Created keypoints :: "
+            << "CPU time used: "
+            << 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC << " ms, "
+            << "Wall clock time passed: "
+            << std::chrono::duration<double, std::milli>(t_end-t_start).count()
+            << " ms"
+            << std::endl;
 	}
 #else
 	UWARN("RTAB-Map is not built with OpenCV nonfree module so SURF cannot be used!");
-#endif
+#endif // RTABMAP_NONFREE
 	return keypoints;
 }
 
@@ -1115,30 +1132,39 @@ cv::Mat SURF::generateDescriptorsImpl(const cv::Mat & image, std::vector<cv::Key
 	}
 	else
 	{
-        UINFO("Starting SURF DESC");
+        // UINFO("Starting SURF DESC");
         std::clock_t c_start = std::clock();
         auto t_start = std::chrono::high_resolution_clock::now();
 
 
-#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL) // rtabmap and opencv are built with OpenCL support
-        UDEBUG("Using OpenCL version of SURF");
-        _surf->detectAndCompute(image.getUMat(cv::ACCESS_READ),
+        if  (
+#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)  // rtabmap and opencv are built with OpenCL support
+                cv::ocl::haveOpenCL()
+#else
+                false
+#endif // defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)
+            )
+        {
+            _surf->detectAndCompute(image.getUMat(cv::ACCESS_READ),
                                 cv::noArray(),
                                 keypoints,
                                 descriptors,
                                 true);
-#else
-        _surf->compute(image, keypoints, descriptors);
-#endif
+        }
+        else {
+            _surf->compute(image, keypoints, descriptors);
+        }
 
         std::clock_t c_end = std::clock();
         auto t_end = std::chrono::high_resolution_clock::now();
-        std::cout << std::fixed << std::setprecision(2) << "CPU time used: "
-                  << 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC << " ms\n"
-                  << "SURF DESC Wall clock time passed: "
-                  << std::chrono::duration<double, std::milli>(t_end-t_start).count()
-                  << " ms\n";
-        UINFO("SURF DESC done");
+        std::cout << std::fixed << std::setprecision(2)
+            << "SURF Created descriptors :: "
+            << "CPU time used: "
+            << 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC << " ms, "
+            << "Wall clock time passed: "
+            << std::chrono::duration<double, std::milli>(t_end-t_start).count()
+            << " ms"
+            << std::endl;
 	}
 #else
 	UWARN("RTAB-Map is not built with OpenCV nonfree module so SURF cannot be used!");

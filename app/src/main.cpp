@@ -39,10 +39,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkVersionMacros.h>
 #include <vtkObject.h>
 
+#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)
 #include "opencv2/core/ocl.hpp"
-#include "opencv2/core/ocl_genbase.hpp"
-#include "opencv2/core/opencl/ocl_defs.hpp"
-#include <Eigen/Core>
+#endif
 
 #if VTK_MAJOR_VERSION > 9 || (VTK_MAJOR_VERSION==9 && VTK_MINOR_VERSION >= 1)
 #include <QVTKRenderWidget.h>
@@ -87,18 +86,14 @@ int main(int argc, char* argv[])
         }
     }
 
-	printf("Program started...\n");
-        printf(" Eigen is using %d threads\n", Eigen::nbThreads());
-	cv::ocl::setUseOpenCL(true);
-        cout << cv::ocl::haveOpenCL() << endl;
-	printf("ocl::useOpenCL()=%i, activated=%d\n", cv::ocl::useOpenCL(), cv::ocl::isOpenCLActivated());
-        if  ( ! cv::ocl::haveOpenCL ())
-        {
-
-                cout  <<  "OpenCL IS not avaiable ..."  <<  endl ;
-                return 0;
-        }
-
+#if defined(RTABMAP_OPENCL) && defined(HAVE_OPENCL)
+    cv::ocl::setUseOpenCL(true);
+    if  (cv::ocl::haveOpenCL ()) {
+        cout << " OpenCL loaded" << endl;
+    } else {
+        cout << " OpenCL is NOT available" << endl;
+    }
+#endif
 
 	UEventsManager::addHandler(mainWindow);
 
