@@ -1,4 +1,4 @@
-# Image: introlab3it/rtabmap:jammy-deps
+# Image: introlab3it/rtabmap:jammy-iron-deps
 
 FROM ubuntu:22.04
 
@@ -17,8 +17,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install build dependencies
 RUN apt-get update && \
     apt upgrade -y && \
-    apt-get install -y git ros-humble-ros-base ros-dev-tools ros-humble-rtabmap-ros && \
-    apt-get remove -y ros-humble-rtabmap* && \
+    apt-get install -y git ros-iron-ros-base ros-dev-tools ros-iron-rtabmap-ros && \
+    apt-get remove -y ros-iron-rtabmap* && \
     apt-get clean && rm -rf /var/lib/apt/lists/
 
 WORKDIR /root/
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y libpdal-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/
 
 # RealSense2
-RUN apt-get update && apt-get install -y ros-humble-librealsense2 && \
+RUN apt-get update && apt-get install -y ros-iron-librealsense2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/
 
 ARG TARGETPLATFORM
@@ -81,7 +81,7 @@ RUN chmod +x /ros_entrypoint.sh
 ENTRYPOINT [ "/ros_entrypoint.sh" ]
 
 # ros2 seems not sourcing by default its multi-arch folders
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib/aarch64-linux-gnu
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/ros/iron/lib/x86_64-linux-gnu:/opt/ros/iron/lib/aarch64-linux-gnu
 
 # for jetson (https://github.com/introlab/rtabmap/issues/776)
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/aarch64-linux-gnu/tegra
